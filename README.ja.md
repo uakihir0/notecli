@@ -61,10 +61,12 @@ npm install -g .
 ## 認証
 
 ブラウザで note.com にログインし、DevTools の **Application → Cookies → https://note.com**
-から次の 2 つをコピーします。
+から Cookie をコピーします。`_note_session_v5` は HttpOnly のため `document.cookie` では
+取得できません。`XSRF-TOKEN` や `note_gql_auth_token` がある場合はそれも含めてください。
 
-- `_note_session_v5`（HttpOnly のため `document.cookie` では取得できません）
-- `XSRF-TOKEN`
+- `_note_session_v5`
+- `XSRF-TOKEN`（存在する場合）
+- `note_gql_auth_token`（存在する場合）
 
 Cookie は次のいずれかで設定できます。`notecli` はカレントディレクトリの `.env` を
 自動読み込みします（Node 20.12+、シェルの環境変数が優先）。
@@ -163,6 +165,9 @@ notecli delete n1234567890ab --yes
 - `$${a^2 + b^2 = c^2}$$` などの KaTeX 数式はそのまま渡されます
 
 ## エージェント向け仕様
+
+note.com の API は下書きのタグを返しません。下書きを公開するときは `--tags` を明示するか、
+`create --publish --tags ...` を使ってください。
 
 - 非 TTY では JSON。`--json` で明示も可能
 - 成功 JSON は stdout、エラー JSON は stderr

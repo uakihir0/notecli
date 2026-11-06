@@ -133,10 +133,11 @@ Set `NOTE_CONFIG_DIR` or `XDG_CONFIG_HOME` to change the location.
 
 1. Open <https://note.com> and log in.
 2. Open DevTools → **Application** → **Cookies** → `https://note.com`.
-3. Copy the values of:
+3. Copy the full Cookie header, including:
    - `_note_session_v5` (the session cookie; it is HttpOnly, so `document.cookie` will not show it)
-   - `XSRF-TOKEN`
-4. Build a header: `_note_session_v5=...; XSRF-TOKEN=...`
+   - `XSRF-TOKEN` if present
+   - `note_gql_auth_token` if present
+4. Build a header: `_note_session_v5=...; XSRF-TOKEN=...; note_gql_auth_token=...`
 
 A browser extension that exports Netscape `cookies.txt` also works with `NOTE_COOKIE_FILE` or
 `notecli auth set-cookie --file`.
@@ -171,6 +172,9 @@ notecli image <key> <file> [--eyecatch]
 
 Use `--json` (or rely on non-TTY stdout) for machine-readable output, and `--format text` to force
 human-readable output.
+
+note.com does not return draft tags through the API. Pass `--tags` explicitly when publishing a
+draft (or use `create --publish --tags ...`) so the tags are applied at publish time.
 
 ### Examples
 

@@ -76,6 +76,8 @@ pnpm -s notecli delete <key> --yes --json
 - `update` never reads stdin implicitly. Use `--stdin`, `--body -`, or `--file -` to replace the
   body. This prevents a title-only update from erasing the body.
 - `--tag` is repeatable; `--tags` accepts a comma-separated list. Tags may include a leading `#`.
+- note.com does not return draft tags through the API. Pass `--tags` explicitly to `publish`, or use
+  `create --publish --tags ...`, so tags are applied when the article becomes public.
 - Article keys look like `n1234567890ab`. Numeric IDs are not accepted by `get`/`update`/etc.;
   obtain the key from `list`.
 
