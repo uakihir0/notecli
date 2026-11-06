@@ -122,7 +122,7 @@ function wrapListItemContent(html: string): string {
   while ((match = tagPattern.exec(html)) !== null) {
     if (match[0].startsWith("</")) {
       const entry = stack.pop();
-      if (!entry || entry.hasNestedLi) {
+      if (!entry) {
         continue;
       }
 

@@ -26,6 +26,7 @@ describe("markdownToNoteHtml", () => {
   it("wraps list item content in paragraphs but leaves nested lists alone", () => {
     const html = markdownToNoteHtml("- One\n- Two\n  - Nested");
     expect(html).toMatch(new RegExp(`<li><p name="${UUID}" id="${UUID}">One</p></li>`));
+    expect(html).toMatch(/<li><p name="[^"]+" id="[^"]+">Two<\/p><ul\b/);
     expect(html).toMatch(/<ul\b/);
     expect(html).toContain("Nested");
     expect(html).not.toContain("<p>One</p>");
