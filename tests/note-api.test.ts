@@ -257,20 +257,58 @@ describe("uploadImage", () => {
     await rm(tempDir, { recursive: true, force: true });
   });
 
-  it("uploads a body image and returns a Markdown snippet", async () => {
+  it("uploads a body image via a presigned S3 POST", async () => {
+    const postUrlEncoded = vi.fn().mockResolvedValue({
+      data: {
+        action: "https://s3.example.test/upload",
+        url: "https://assets.st-note.com/image.png",
+        post: {
+          key: "uploads/image.png",
+          policy: "policy-value",
+          "x-amz-signature": "signature",
+        },
+      },
+    });
+    const postExternalForm = vi.fn().mockResolvedValue(undefined);
+
+    const result = await uploadImage(
+      asClient({ postUrlEncoded, postExternalForm }),
+      "n123",
+      imagePath,
+      "body"
+    );
+
+    expect(postUrlEncoded).toHaveBeenCalledWith(
+      "/v3/images/upload/presigned_post",
+      { filename: "header.png" }
+    );
+    expect(postExternalForm.mock.calls[0]![0]).toBe("https://s3.example.test/upload");
+    const form = postExternalForm.mock.calls[0]![1] as FormData;
+    expect(form.get("key")).toBe("uploads/image.png");
+    expect(form.get("policy")).toBe("policy-value");
+    expect(form.get("file")).toBeInstanceOf(Blob);
+    expect(result.url).toBe("https://assets.st-note.com/image.png");
+    expect(result.markdown).toContain("![header](https://assets.st-note.com/image.png)");
+  });
+
+  it("uploads an eyecatch image with the note_id field", async () => {
     const get = vi.fn().mockResolvedValue({ data: { id: 99 } });
     const postForm = vi.fn().mockResolvedValue({
-      data: { url: "https://assets.st-note.com/image.png", key: "image-key" },
+      data: { url: "https://assets.st-note.com/eyecatch.png" },
     });
 
-    const result = await uploadImage(asClient({ get, postForm }), "n123", imagePath, "body");
+    const result = await uploadImage(
+      asClient({ get, postForm }),
+      "n123",
+      imagePath,
+      "eyecatch"
+    );
 
     expect(get).toHaveBeenCalledWith("/v3/notes/n123");
     expect(postForm.mock.calls[0]![0]).toBe("/v1/image_upload/note_eyecatch");
     const form = postForm.mock.calls[0]![1] as FormData;
     expect(form.get("note_id")).toBe("99");
-    expect(result.url).toBe("https://assets.st-note.com/image.png");
-    expect(result.markdown).toContain("![header](https://assets.st-note.com/image.png)");
+    expect(result.url).toBe("https://assets.st-note.com/eyecatch.png");
   });
 
   it("rejects unsupported image extensions", async () => {

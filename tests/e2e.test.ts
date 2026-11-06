@@ -129,6 +129,30 @@ async function route(request: IncomingMessage, response: ServerResponse): Promis
     return;
   }
 
+  if (url.pathname === "/api/v3/images/upload/presigned_post" && request.method === "POST") {
+    expect(body).toContain("filename=pixel.png");
+    json(response, 200, {
+      data: {
+        action: `${baseUrl.replace(/\/api$/, "")}/s3/upload`,
+        url: "https://example.com/pixel.png",
+        post: {
+          key: "uploads/pixel.png",
+          policy: "policy-value",
+          "x-amz-signature": "signature-value",
+        },
+      },
+    });
+    return;
+  }
+
+  if (url.pathname === "/s3/upload" && request.method === "POST") {
+    expect(request.headers["content-type"]).toContain("multipart/form-data");
+    expect(body).toContain('filename="pixel.png"');
+    response.writeHead(204);
+    response.end();
+    return;
+  }
+
   if (url.pathname === "/api/v1/notes/n/n1" && request.method === "DELETE") {
     json(response, 200, { data: { result: true } });
     return;

@@ -22,6 +22,7 @@ export interface RequestOptions {
   query?: Record<string, QueryValue>;
   json?: unknown;
   form?: FormData;
+  urlEncoded?: Record<string, string>;
   headers?: Record<string, string>;
 }
 
@@ -209,6 +210,37 @@ export class NoteApiClient {
     return this.request<T>("POST", path, { form });
   }
 
+  async postUrlEncoded<T>(path: string, data: Record<string, string>): Promise<T> {
+    return this.request<T>("POST", path, { urlEncoded: data });
+  }
+
+  async postExternalForm(url: string, form: FormData): Promise<void> {
+    let response: Response;
+    try {
+      response = await this.fetchImpl(url, {
+        method: "POST",
+        body: form,
+        signal: AbortSignal.timeout(this.timeoutMs),
+      });
+    } catch (error) {
+      throw new ApiError(
+        `Image upload failed: ${error instanceof Error ? error.message : String(error)}`,
+        undefined,
+        { url: url.split("?")[0] },
+        error
+      );
+    }
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new ApiError(
+        `Image upload failed (HTTP ${response.status}).`,
+        response.status,
+        { response: responseSnippet(text) }
+      );
+    }
+  }
+
   async request<T>(method: string, path: string, options: RequestOptions = {}): Promise<T> {
     const upperMethod = method.toUpperCase();
     if (
@@ -240,6 +272,8 @@ export class NoteApiClient {
       init.body = JSON.stringify(options.json);
     } else if (options.form !== undefined) {
       init.body = options.form;
+    } else if (options.urlEncoded !== undefined) {
+      init.body = new URLSearchParams(options.urlEncoded).toString();
     }
 
     let response: Response;
@@ -388,6 +422,8 @@ export class NoteApiClient {
 
     if (options.json !== undefined) {
       headers["Content-Type"] = "application/json";
+    } else if (options.urlEncoded !== undefined) {
+      headers["Content-Type"] = "application/x-www-form-urlencoded";
     }
 
     if (method.toUpperCase() !== "GET" && method.toUpperCase() !== "HEAD") {

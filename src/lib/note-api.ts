@@ -378,28 +378,71 @@ export async function uploadImage(
     );
   }
 
-  const numericId = await resolveNumericId(client, key);
   const buffer = await readFile(absolutePath);
-  const form = new FormData();
-  form.append("note_id", numericId);
-  form.append(
-    "file",
-    new Blob([new Uint8Array(buffer)], {
-      type: CONTENT_TYPES[extension] ?? "application/octet-stream",
-    }),
-    basename(absolutePath)
-  );
+  const filename = basename(absolutePath);
+  const alt = basename(absolutePath, extension);
+  const blob = new Blob([new Uint8Array(buffer)], {
+    type: CONTENT_TYPES[extension] ?? "application/octet-stream",
+  });
 
-  const response = await client.postForm<unknown>("/v1/image_upload/note_eyecatch", form);
-  const data = dataOf(response, "uploading the image");
-  const url = data.url;
-  if (url === undefined || url === null || String(url) === "") {
-    throw new ApiError("note.com did not return an uploaded image URL.");
+  let imageUrl: string;
+  let imageKey: string | undefined;
+
+  if (kind === "eyecatch") {
+    const numericId = await resolveNumericId(client, key);
+    const form = new FormData();
+    form.append("note_id", numericId);
+    form.append("file", blob, filename);
+
+    const response = await client.postForm<unknown>(
+      "/v1/image_upload/note_eyecatch",
+      form
+    );
+    const data = dataOf(response, "uploading the eyecatch image");
+    imageUrl = String(data.url ?? "");
+    imageKey = data.key ? String(data.key) : undefined;
+  } else {
+    // Body images use a presigned S3 POST. This does not change the eyecatch
+    // and accepts normal inline image aspect ratios.
+    const presigned = dataOf(
+      await client.postUrlEncoded<unknown>("/v3/images/upload/presigned_post", {
+        filename,
+      }),
+      "requesting an image upload URL"
+    );
+
+    const action = presigned.action;
+    const publicUrl = presigned.url;
+    const post = presigned.post;
+    if (
+      typeof action !== "string" ||
+      typeof publicUrl !== "string" ||
+      post === null ||
+      typeof post !== "object" ||
+      Array.isArray(post)
+    ) {
+      throw new ApiError(
+        "note.com did not return a valid presigned image upload payload."
+      );
+    }
+
+    const form = new FormData();
+    for (const [field, value] of Object.entries(post as Record<string, unknown>)) {
+      if (field !== "file" && value !== undefined && value !== null) {
+        form.append(field, String(value));
+      }
+    }
+    form.append("file", blob, filename);
+    await client.postExternalForm(action, form);
+
+    imageUrl = publicUrl;
+    const keyValue = (post as Record<string, unknown>).key;
+    imageKey = keyValue ? String(keyValue) : undefined;
   }
 
-  const imageUrl = String(url);
-  const imageKey = data.key ? String(data.key) : undefined;
-  const alt = basename(absolutePath, extension);
+  if (!imageUrl) {
+    throw new ApiError("note.com did not return an uploaded image URL.");
+  }
 
   return {
     url: imageUrl,
