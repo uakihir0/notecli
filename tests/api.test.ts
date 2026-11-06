@@ -165,36 +165,46 @@ describe("NoteApiClient", () => {
     await expect(client.get("/v2/self")).rejects.toBeInstanceOf(ApiError);
   });
 
-  it("retrieves the current user, falling back to the stats endpoint", async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce(jsonResponse({ error: "missing" }, 404))
-      .mockResolvedValueOnce(
-        jsonResponse({ data: { user_id: 42, urlname: "writer" } })
-      );
+  it("retrieves the current user from the stats endpoint", async () => {
+    const fetchMock = vi.fn(async (_input: string | URL | Request) =>
+      jsonResponse({ data: { user_id: 42, urlname: "writer" } })
+    );
     const client = new NoteApiClient(jar(), {
       baseUrl: "https://example.test/api",
       fetchImpl: fetchMock as unknown as typeof fetch,
     });
 
     await expect(client.getCurrentUser()).resolves.toEqual({ id: "42", urlname: "writer" });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const url = new URL(String(fetchMock.mock.calls[0]![0]));
+    expect(url.pathname).toBe("/api/v1/stats/pv");
+    expect(url.searchParams.get("filter")).toBe("all");
   });
 
-  it("falls back to the authenticated article list for session checks", async () => {
+  it("falls back to /v2/self when the stats endpoint fails", async () => {
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce(jsonResponse({ error: "missing" }, 404))
       .mockResolvedValueOnce(jsonResponse({ error: "bad request" }, 400))
-      .mockResolvedValueOnce(
-        jsonResponse({ data: { notes: [], totalCount: 0, isLastPage: true } })
-      );
+      .mockResolvedValueOnce(jsonResponse({ data: { id: 42, urlname: "writer" } }));
     const client = new NoteApiClient(jar(), {
       baseUrl: "https://example.test/api",
       fetchImpl: fetchMock as unknown as typeof fetch,
     });
 
-    await expect(client.getCurrentUser()).resolves.toEqual({ id: "", urlname: "" });
-    expect(fetchMock).toHaveBeenCalledTimes(3);
+    await expect(client.getCurrentUser()).resolves.toEqual({ id: "42", urlname: "writer" });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("treats a 200 not_login payload as an auth error", async () => {
+    const fetchMock = vi.fn(async () =>
+      jsonResponse({ error: { code: "auth", message: "not_login" } })
+    );
+    const client = new NoteApiClient(jar(), {
+      baseUrl: "https://example.test/api",
+      fetchImpl: fetchMock as unknown as typeof fetch,
+    });
+
+    await expect(client.getCurrentUser()).rejects.toBeInstanceOf(AuthError);
   });
 });
 

@@ -76,6 +76,18 @@ describe("listArticles", () => {
     expect(get).toHaveBeenCalledTimes(2);
     expect(get.mock.calls[0]![1]).toEqual({ page: 1, publish_status: "draft" });
   });
+
+  it("verifies the session when the list is empty", async () => {
+    const get = vi.fn().mockResolvedValue({
+      data: { notes: [], totalCount: 0, isLastPage: true },
+    });
+    const getCurrentUser = vi.fn().mockResolvedValue({ id: "1", urlname: "writer" });
+
+    const result = await listArticles(asClient({ get, getCurrentUser }));
+
+    expect(result.articles).toEqual([]);
+    expect(getCurrentUser).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe("createDraft", () => {

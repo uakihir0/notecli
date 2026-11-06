@@ -152,6 +152,12 @@ export async function listArticles(
     page += 1;
   }
 
+  if (collected.length === 0) {
+    // note.com returns an empty 200 list for unauthenticated requests, so an
+    // empty result is not enough to distinguish "no articles" from "logged out".
+    await client.getCurrentUser();
+  }
+
   return {
     articles: collected.slice(0, limit),
     total,

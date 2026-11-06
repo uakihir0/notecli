@@ -173,22 +173,39 @@ export class NoteApiClient {
   }
 
   async getCurrentUser(): Promise<UserInfo> {
+    let lastError: unknown;
+
+    // The stats endpoint is the canonical "current user" probe used by
+    // note-mcp. It requires the `filter` query parameter on current note.com.
+    try {
+      const response = await this.get<Record<string, unknown>>("/v1/stats/pv", {
+        filter: "all",
+      });
+      if (isAuthenticationErrorResponse(response)) {
+        throw new AuthError(
+          "note.com reported that the session is not logged in. " +
+            "Refresh the session cookie or run \"notecli auth login\"."
+        );
+      }
+      const user = extractUser(response);
+      if (user) {
+        return user;
+      }
+    } catch (error) {
+      if (error instanceof AuthError || error instanceof RateLimitError) {
+        throw error;
+      }
+      lastError = error;
+    }
+
     try {
       const response = await this.get<Record<string, unknown>>("/v2/self");
-      const user = extractUser(response);
-      if (user) {
-        return user;
+      if (isAuthenticationErrorResponse(response)) {
+        throw new AuthError(
+          "note.com reported that the session is not logged in. " +
+            "Refresh the session cookie or run \"notecli auth login\"."
+        );
       }
-    } catch (error) {
-      // Auth and rate-limit errors are meaningful on their own. Other failures
-      // may be endpoint-specific, so try the stats endpoint below.
-      if (error instanceof AuthError || error instanceof RateLimitError) {
-        throw error;
-      }
-    }
-
-    try {
-      const response = await this.get<Record<string, unknown>>("/v1/stats/pv");
       const user = extractUser(response);
       if (user) {
         return user;
@@ -197,12 +214,13 @@ export class NoteApiClient {
       if (error instanceof AuthError || error instanceof RateLimitError) {
         throw error;
       }
+      lastError = error;
     }
 
-    // Some accounts do not expose user details through the endpoints above.
-    // The authenticated article list is a reliable session check.
-    await this.get<unknown>("/v2/note_list/contents", { page: 1 });
-    return { id: "", urlname: "" };
+    throw new AuthError(
+      "Could not verify the note.com session. Refresh the session cookie or run \"notecli auth login\".",
+      lastError instanceof Error ? { last_error: lastError.message } : undefined
+    );
   }
 
   private buildUrl(path: string, query?: Record<string, QueryValue>): string {
@@ -309,6 +327,24 @@ export class NoteApiClient {
       details
     );
   }
+}
+
+function isAuthenticationErrorResponse(response: Record<string, unknown>): boolean {
+  const error = response.error;
+  if (error === null || typeof error !== "object") {
+    return false;
+  }
+
+  const record = error as Record<string, unknown>;
+  const code = String(record.code ?? "").toLowerCase();
+  const message = String(record.message ?? "").toLowerCase();
+  return (
+    code === "auth" ||
+    code === "unauthorized" ||
+    message.includes("not_login") ||
+    message.includes("not logged") ||
+    message.includes("unauthorized")
+  );
 }
 
 function extractUser(response: Record<string, unknown>): UserInfo | null {

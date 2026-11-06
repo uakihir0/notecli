@@ -53,6 +53,11 @@ async function route(request: IncomingMessage, response: ServerResponse): Promis
     return;
   }
 
+  if (url.pathname === "/api/v1/stats/pv" && request.method === "GET") {
+    json(response, 200, { data: { user_id: 42, urlname: "writer" } });
+    return;
+  }
+
   if (url.pathname === "/api/v2/note_list/contents" && request.method === "GET") {
     json(response, 200, {
       data: {
