@@ -1,4 +1,4 @@
-import { mkdtemp } from "node:fs/promises";
+import { mkdtemp, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -186,6 +186,33 @@ describe("CLI", () => {
     expect(output.cookie_names).toContain(SESSION_COOKIE);
     expect(stdout).not.toContain("super-secret-session");
     expect(stdout).not.toContain("super-secret-xsrf");
+  });
+
+  it("stores NOTE_COOKIE via auth login and reads it back from disk", async () => {
+    await runCli("auth", "login", "--no-verify", "--json");
+
+    expect(process.exitCode).toBe(0);
+    expect(stdout).not.toContain("super-secret-session");
+    const stored = JSON.parse(
+      await readFile(join(configDir, "credentials.json"), "utf8")
+    ) as { cookies: Record<string, string>; version: number };
+    expect(stored.version).toBe(1);
+    expect(stored.cookies[SESSION_COOKIE]).toBe("super-secret-session");
+
+    delete process.env.NOTE_COOKIE;
+    stdout = "";
+    mockFetch(
+      () =>
+        new Response(JSON.stringify({ data: { id: 42, urlname: "writer" } }), {
+          headers: { "content-type": "application/json" },
+        })
+    );
+
+    await runCli("auth", "status", "--json");
+    expect(process.exitCode).toBe(0);
+    const output = JSON.parse(stdout) as { authenticated: boolean; source: string };
+    expect(output.authenticated).toBe(true);
+    expect(output.source).toBe("file");
   });
 
   it("prints human-readable tables in text mode", async () => {

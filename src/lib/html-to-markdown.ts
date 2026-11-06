@@ -105,7 +105,13 @@ function preprocessHtml(html: string): string {
   // Empty embed figures are skipped by Turndown for the same reason.
   result = result.replace(
     /<figure\b(?=[^>]*\bdata-src="([^"]+)")[^>]*>\s*<\/figure>/gi,
-    (_match, url: string) => `<p>${url}</p>`
+    (_match, url: string) =>
+      `<p>${url
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">")
+        .replace(/&amp;/g, "&")}</p>`
   );
 
   return result;

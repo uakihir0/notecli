@@ -80,6 +80,10 @@ function parseNetscapeCookieFile(input: string): CookieMap | null {
   return found ? cookies : null;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
 function parseJsonCookies(input: string): CookieMap | null {
   let parsed: unknown;
   try {
@@ -92,10 +96,15 @@ function parseJsonCookies(input: string): CookieMap | null {
     return null;
   }
 
+  const candidate =
+    !Array.isArray(parsed) && isRecord(parsed) && parsed.cookies !== undefined
+      ? parsed.cookies
+      : parsed;
+
   const cookies: CookieMap = {};
 
-  if (Array.isArray(parsed)) {
-    for (const entry of parsed) {
+  if (Array.isArray(candidate)) {
+    for (const entry of candidate) {
       if (entry === null || typeof entry !== "object") {
         continue;
       }
@@ -109,7 +118,11 @@ function parseJsonCookies(input: string): CookieMap | null {
     return cookies;
   }
 
-  for (const [name, value] of Object.entries(parsed as Record<string, unknown>)) {
+  if (!isRecord(candidate)) {
+    return null;
+  }
+
+  for (const [name, value] of Object.entries(candidate)) {
     if (typeof value === "string") {
       cookies[name] = value;
     }

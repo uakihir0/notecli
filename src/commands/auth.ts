@@ -14,7 +14,7 @@ import {
   parseCookieInput,
   XSRF_COOKIE,
 } from "../lib/cookies.js";
-import { AuthError, NotecliError } from "../lib/errors.js";
+import { AuthError, InputError, NotecliError } from "../lib/errors.js";
 import { printAuthStatusText } from "../lib/format.js";
 import { readCookieInput } from "../lib/input.js";
 import { isJsonOutput, writeJson, writeText } from "../lib/output.js";
@@ -102,7 +102,7 @@ export function registerAuthCommand(program: Command): void {
           try {
             auth = await loadAuthContext();
           } catch (error) {
-            if (error instanceof AuthError) {
+            if (error instanceof AuthError || error instanceof InputError) {
               if (isJsonOutput()) {
                 writeJson({
                   authenticated: false,
@@ -112,9 +112,9 @@ export function registerAuthCommand(program: Command): void {
                 });
               } else {
                 printAuthStatusText({ authenticated: false });
-                writeText("Set NOTE_COOKIE/NOTE_COOKIE_FILE or run \"notecli auth login\".");
+                process.stderr.write(`notecli: ${error.message}\n`);
               }
-              process.exitCode = error.exitCode;
+              process.exitCode = 3;
               return;
             }
             throw error;
@@ -147,7 +147,7 @@ export function registerAuthCommand(program: Command): void {
               });
             }
           } catch (error) {
-            if (error instanceof AuthError) {
+            if (error instanceof AuthError || error instanceof InputError) {
               if (isJsonOutput()) {
                 writeJson({
                   authenticated: false,
@@ -160,7 +160,7 @@ export function registerAuthCommand(program: Command): void {
                 printAuthStatusText({ authenticated: false });
                 process.stderr.write(`notecli: ${error.message}\n`);
               }
-              process.exitCode = error.exitCode;
+              process.exitCode = 3;
               return;
             }
             if (error instanceof NotecliError) {
