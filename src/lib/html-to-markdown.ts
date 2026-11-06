@@ -91,6 +91,18 @@ const turndown = createTurndown();
 function preprocessHtml(html: string): string {
   let result = html;
 
+  // note.com wraps list-item text in <p>. Flatten simple items so Turndown
+  // emits compact Markdown lists instead of blank lines between every item.
+  result = result.replace(
+    /<li([^>]*)>\s*<p([^>]*)>([\s\S]*?)<\/p>\s*<\/li>/gi,
+    (match, liAttrs: string, _pAttrs: string, content: string) => {
+      if (/<(?:p|ul|ol|blockquote|pre|figure|div|table)\b/i.test(content)) {
+        return match;
+      }
+      return `<li${liAttrs}>${content}</li>`;
+    }
+  );
+
   // Turndown skips empty custom elements, so turn empty TOC elements into a
   // text marker before conversion.
   result = result.replace(

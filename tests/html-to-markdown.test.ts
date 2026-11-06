@@ -15,6 +15,7 @@ describe("htmlToMarkdown", () => {
     expect(markdown).toContain("Hello **world** and [link](https://example.com).");
     expect(markdown).toContain("- One");
     expect(markdown).toContain("- Two");
+    expect(markdown).toContain("- One\n- Two");
   });
 
   it("converts note.com image figures to Markdown images", () => {
