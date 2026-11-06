@@ -176,6 +176,7 @@ The converter intentionally follows note.com's editor format. Supported features
   SpeakerDeck, note money, Zenn, Qiita, connpass)
 - `^5243` and `$GOOG` stock notation → note money links
 - Images become note.com `<figure>` elements with a `figcaption` from the Markdown title
+- KaTeX math such as `$${a^2 + b^2 = c^2}$$` is passed through for note.com to render
 
 See `src/lib/markdown-to-html.ts` for the exact transformations.
 

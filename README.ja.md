@@ -108,6 +108,7 @@ notecli delete n1234567890ab --yes
   SpeakerDeck、note money、Zenn、Qiita、connpass）
 - `^5243` / `$GOOG` → note money のリンク
 - 画像 → note.com の `<figure>` 形式
+- `$${a^2 + b^2 = c^2}$$` などの KaTeX 数式はそのまま渡されます
 
 ## エージェント向け仕様
 
