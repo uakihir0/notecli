@@ -215,16 +215,3 @@ export function parseArticleList(
 export function bodyLength(html: string): number {
   return Array.from(html).length;
 }
-
-export function articleStatusLabel(status: ArticleStatus): string {
-  switch (status) {
-    case "draft":
-      return "draft";
-    case "published":
-      return "published";
-    case "private":
-      return "private";
-    default:
-      return status;
-  }
-}
