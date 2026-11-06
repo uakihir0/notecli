@@ -50,6 +50,15 @@ describe("credential storage", () => {
     expect(auth.jar.get(SESSION_COOKIE)).toBe("session");
   });
 
+  it("ignores empty environment variables and falls back to the file", async () => {
+    await saveCredentials({ [SESSION_COOKIE]: "session" });
+    vi.stubEnv("NOTE_COOKIE", "");
+    vi.stubEnv("NOTE_COOKIE_FILE", "");
+
+    const auth = await loadAuthContext();
+    expect(auth.source).toBe("file");
+  });
+
   it("prefers NOTE_COOKIE over the credentials file", async () => {
     await saveCredentials({ [SESSION_COOKIE]: "from-file" });
     vi.stubEnv("NOTE_COOKIE", `${SESSION_COOKIE}=from-env`);

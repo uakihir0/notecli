@@ -193,10 +193,7 @@ export async function loadAuthContext(): Promise<AuthContext> {
   const envCookie = process.env.NOTE_COOKIE;
   const envCookieFile = process.env.NOTE_COOKIE_FILE;
 
-  if (envCookie !== undefined) {
-    if (!envCookie.trim()) {
-      throw new AuthError("NOTE_COOKIE is set but empty.");
-    }
+  if (envCookie !== undefined && envCookie.trim() !== "") {
     const cookies = parseCookieInput(envCookie);
     assertSessionCookie(cookies);
     return {
@@ -208,10 +205,7 @@ export async function loadAuthContext(): Promise<AuthContext> {
     };
   }
 
-  if (envCookieFile !== undefined) {
-    if (!envCookieFile.trim()) {
-      throw new AuthError("NOTE_COOKIE_FILE is set but empty.");
-    }
+  if (envCookieFile !== undefined && envCookieFile.trim() !== "") {
     const cookies = parseCookieInput(await readCookieFile(envCookieFile));
     assertSessionCookie(cookies);
     return {
