@@ -18,17 +18,36 @@ git clone <this-repository>
 cd notecli
 pnpm install
 pnpm build
+pnpm notecli --version
 ```
 
-リポジトリ内から直接実行できます（グローバルインストール不要）。
+リポジトリ内では pnpm 経由で実行できます。
 
 ```bash
+pnpm notecli auth status --json
+```
+
+スクリプトや AI エージェントから使う場合は、pnpm のログが JSON に混ざらないよう
+`--silent` を付けてください。
+
+```bash
+pnpm --silent notecli auth status --json
+# 短縮形
+pnpm -s notecli list --status draft --json
+```
+
+終了コードは pnpm 経由でも保持されます（未認証なら `3`）。
+
+ローカルラッパーを直接使うこともできます。
+
+```bash
+./bin/notecli --version
+# または
 export PATH="$PWD/bin:$PATH"
 notecli --version
 ```
 
-`./bin/notecli` または `node dist/cli.js` でも実行できます。ソースを変更したら
-`pnpm build` を再実行してください。
+ラッパーはローカルの `dist/` を使うため、ソース変更後は `pnpm build` を再実行してください。
 
 グローバルインストールする場合:
 
@@ -37,8 +56,7 @@ npm install -g .
 ```
 
 `pnpm link --global` は、pnpm の global bin（macOS では `~/Library/pnpm/bin`）が
-`PATH` に無いと失敗します。その場合は上記のローカル実行を使うか、`pnpm setup` を
-実行してシェルを再起動してください。
+`PATH` に無いと失敗します。その場合は上記の pnpm スクリプトかローカルラッパーを使ってください。
 
 ## 認証
 

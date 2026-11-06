@@ -9,10 +9,13 @@ Prefer environment variables; never print or echo their values.
 
 ```bash
 export NOTE_COOKIE='_note_session_v5=...; XSRF-TOKEN=...'
-notecli auth status --json
+pnpm -s notecli auth status --json
 ```
 
 Alternative: `NOTE_COOKIE_FILE=/path/to/cookies.txt` (raw header, JSON, or Netscape format).
+
+From the repository root, run commands as `pnpm -s notecli ...` (or `./bin/notecli ...`).
+`-s` keeps pnpm's own messages out of JSON output; exit codes are preserved.
 
 If neither is set, the CLI reads `~/.config/notecli/credentials.json` (written by
 `notecli auth login` with mode `0600`). `auth status` exits `3` when not authenticated.
@@ -29,29 +32,29 @@ If neither is set, the CLI reads `~/.config/notecli/credentials.json` (written b
 ## Recommended workflow
 
 ```bash
-notecli list --status draft --json         # discover keys
-notecli get <key> --json                   # read title, body, body_html, tags
-notecli update <key> --stdin --json < updated.md
-notecli preview <key> --json               # inspect before publishing
-notecli publish <key> --json
+pnpm -s notecli list --status draft --json         # discover keys
+pnpm -s notecli get <key> --json                   # read title, body, body_html, tags
+pnpm -s notecli update <key> --stdin --json < updated.md
+pnpm -s notecli preview <key> --json               # inspect before publishing
+pnpm -s notecli publish <key> --json
 ```
 
 Create a draft:
 
 ```bash
-printf '%s' "$ARTICLE" | notecli create --title "$TITLE" --json
+printf '%s' "$ARTICLE" | pnpm -s notecli create --title "$TITLE" --json
 ```
 
 Create and publish in one step:
 
 ```bash
-notecli create --title "$TITLE" --file article.md --publish --json
+pnpm -s notecli create --title "$TITLE" --file article.md --publish --json
 ```
 
 Delete a draft (published articles cannot be deleted):
 
 ```bash
-notecli delete <key> --yes --json
+pnpm -s notecli delete <key> --yes --json
 ```
 
 ## Input rules
@@ -136,8 +139,8 @@ standalone embed URLs, stock notation (`^5243`, `$GOOG`), and note-style image f
 ## Image uploads
 
 ```bash
-notecli image <key> ./body.png --json          # body image; result includes markdown snippet
-notecli image <key> ./header.png --eyecatch --json
+pnpm -s notecli image <key> ./body.png --json          # body image; result includes markdown snippet
+pnpm -s notecli image <key> ./header.png --eyecatch --json
 ```
 
 The result includes the uploaded `url`; for body images, insert the returned `markdown` snippet
