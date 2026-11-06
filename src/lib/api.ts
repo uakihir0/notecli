@@ -64,6 +64,7 @@ export class NoteApiClient {
   private readonly fetchImpl: typeof fetch;
   private readonly timeoutMs: number;
   private readonly userAgent: string;
+  private xsrfFetchAttempted = false;
 
   constructor(jar: CookieJar, options: NoteApiClientOptions = {}) {
     this.jar = jar;
@@ -97,6 +98,23 @@ export class NoteApiClient {
   }
 
   async request<T>(method: string, path: string, options: RequestOptions = {}): Promise<T> {
+    const upperMethod = method.toUpperCase();
+    if (
+      upperMethod !== "GET" &&
+      upperMethod !== "HEAD" &&
+      !this.jar.xsrfToken() &&
+      !this.xsrfFetchAttempted
+    ) {
+      // Some users only copy the HttpOnly session cookie. Make one harmless
+      // GET so note.com can issue/rotate XSRF-TOKEN before a mutation.
+      this.xsrfFetchAttempted = true;
+      try {
+        await this.request("GET", "/v2/self");
+      } catch {
+        // The mutation will surface a useful error if authentication is bad.
+      }
+    }
+
     const url = this.buildUrl(path, options.query);
     const headers = this.buildHeaders(method, options);
     const init: RequestInit = {

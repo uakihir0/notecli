@@ -14,7 +14,7 @@ import {
   parseCookieInput,
   XSRF_COOKIE,
 } from "../lib/cookies.js";
-import { AuthError, InputError, NotecliError } from "../lib/errors.js";
+import { AuthError, InputError } from "../lib/errors.js";
 import { printAuthStatusText } from "../lib/format.js";
 import { readCookieInput } from "../lib/input.js";
 import { isJsonOutput, writeJson, writeText } from "../lib/output.js";
@@ -26,10 +26,6 @@ interface LoginOptions {
   session?: string;
   xsrf?: string;
   verify?: boolean;
-}
-
-interface StatusOptions {
-  json?: boolean;
 }
 
 export function registerAuthCommand(program: Command): void {
@@ -94,7 +90,7 @@ export function registerAuthCommand(program: Command): void {
     .command("status")
     .description("Verify the current note.com session")
     .action(
-      (_options: StatusOptions) =>
+      () =>
         runAction(async () => {
           const credentialsPath = getCredentialsPath();
           let auth: Awaited<ReturnType<typeof loadAuthContext>>;
@@ -162,9 +158,6 @@ export function registerAuthCommand(program: Command): void {
               }
               process.exitCode = 3;
               return;
-            }
-            if (error instanceof NotecliError) {
-              throw error;
             }
             throw error;
           }

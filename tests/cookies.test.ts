@@ -51,6 +51,24 @@ describe("parseCookieInput", () => {
     });
   });
 
+  it("ignores cookies for unrelated domains", () => {
+    const input = [
+      `.note.com\tTRUE\t/\tTRUE\t1893456000\t${SESSION_COOKIE}\tsession`,
+      `.example.com\tTRUE\t/\tTRUE\t1893456000\tsession_cookie\tmust-not-leak`,
+    ].join("\n");
+    expect(parseCookieInput(input)).toEqual({ [SESSION_COOKIE]: "session" });
+  });
+
+  it("ignores Playwright cookies for unrelated domains", () => {
+    const cookies = parseCookieInput(
+      JSON.stringify([
+        { name: SESSION_COOKIE, value: "session", domain: ".note.com" },
+        { name: "secret", value: "must-not-leak", domain: ".example.com" },
+      ])
+    );
+    expect(cookies).toEqual({ [SESSION_COOKIE]: "session" });
+  });
+
   it("preserves '=' characters in cookie values", () => {
     const cookies = parseCookieInput(`${SESSION_COOKIE}=abc==`);
     expect(cookies[SESSION_COOKIE]).toBe("abc==");

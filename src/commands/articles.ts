@@ -72,14 +72,14 @@ interface ImageOptions {
   eyecatch?: boolean;
 }
 
-function collectTag(value: string, previous: string[] = []): string[] {
-  return [...previous, value];
+function collectTag(value: string, previous: string[] | undefined): string[] {
+  return [...(previous ?? []), value];
 }
 
 function addTagOptions(command: Command): Command {
   return command
     .option("--tags <tags>", "comma-separated tags")
-    .option("--tag <tag>", "add a tag (repeatable)", collectTag, []);
+    .option("--tag <tag>", "add a tag (repeatable)", collectTag);
 }
 
 function tagsFromOptions(options: TagOptions): string[] | undefined {
@@ -235,7 +235,7 @@ export function registerArticleCommands(program: Command): void {
           }
 
           try {
-            const published = await publishArticle(client, created.article.key);
+            const published = await publishArticle(client, created.article.key, tags);
             return {
               article: published.article,
               published: true,

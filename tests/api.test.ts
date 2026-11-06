@@ -101,6 +101,33 @@ describe("NoteApiClient", () => {
     expect(cookieJar.xsrfToken()).toBe("rotated=2");
   });
 
+  it("fetches an XSRF token before the first mutation when only the session cookie exists", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        jsonResponse(
+          { data: { id: 42, urlname: "writer" } },
+          200,
+          { "set-cookie": `${XSRF_COOKIE}=issued%3Dtoken; Path=/; Secure` }
+        )
+      )
+      .mockResolvedValueOnce(jsonResponse({ data: { result: true } }));
+
+    const cookieJar = new CookieJar({ [SESSION_COOKIE]: "session-value" });
+    const client = new NoteApiClient(cookieJar, {
+      baseUrl: "https://example.test/api",
+      fetchImpl: fetchMock as unknown as typeof fetch,
+    });
+
+    await client.post("/v1/text_notes", { name: "test" });
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const init = fetchMock.mock.calls[1]![1]!;
+    const headers = init.headers as Record<string, string>;
+    expect(headers["X-XSRF-TOKEN"]).toBe("issued=token");
+    expect(cookieJar.get(XSRF_COOKIE)).toBe("issued%3Dtoken");
+  });
+
   it("maps 401 to an auth error", async () => {
     const client = new NoteApiClient(jar(), {
       baseUrl: "https://example.test/api",

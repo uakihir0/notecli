@@ -7,11 +7,14 @@ import { Command, CommanderError, Option } from "commander";
 import { registerArticleCommands } from "./commands/articles.js";
 import { registerAuthCommand } from "./commands/auth.js";
 import { reportError } from "./lib/runner.js";
-import { setOutputFormat, type OutputFormat } from "./lib/output.js";
+import { isJsonOutput, setOutputFormat, type OutputFormat } from "./lib/output.js";
 import { VERSION } from "./lib/version.js";
+
+let commanderUsageOutput = "";
 
 export function buildProgram(): Command {
   const program = new Command();
+  commanderUsageOutput = "";
 
   program
     .name("notecli")
@@ -53,6 +56,15 @@ Agent notes:
     );
 
   program.exitOverride();
+  program.configureOutput({
+    writeErr: (text) => {
+      if (isJsonOutput()) {
+        commanderUsageOutput += text;
+      } else {
+        process.stderr.write(text);
+      }
+    },
+  });
 
   program.hook("preAction", (_thisCommand, actionCommand) => {
     const options = actionCommand.optsWithGlobals<{
@@ -79,6 +91,7 @@ Agent notes:
 }
 
 async function main(): Promise<void> {
+  applyEarlyOutputFormat(process.argv);
   const program = buildProgram();
 
   try {
@@ -93,11 +106,46 @@ async function main(): Promise<void> {
         process.exitCode = 0;
         return;
       }
+
+      if (isJsonOutput() && commanderUsageOutput.trim()) {
+        const firstLine = commanderUsageOutput.trim().split("\n")[0];
+        process.stderr.write(
+          `${JSON.stringify(
+            { error: { code: "usage_error", message: firstLine } },
+            null,
+            2
+          )}\n`
+        );
+      }
       process.exitCode = 2;
       return;
     }
 
     reportError(error);
+  }
+}
+
+/**
+ * Set the output format before Commander parses. Some usage errors occur before
+ * the preAction hook runs, and agents still need a JSON error payload.
+ */
+function applyEarlyOutputFormat(argv: string[]): void {
+  if (argv.includes("--json")) {
+    setOutputFormat("json");
+    return;
+  }
+
+  const formatIndex = argv.indexOf("--format");
+  const inlineFormat = argv.find((arg) => arg.startsWith("--format="));
+  const value =
+    formatIndex >= 0
+      ? argv[formatIndex + 1]
+      : inlineFormat !== undefined
+        ? inlineFormat.slice("--format=".length)
+        : undefined;
+
+  if (value === "json" || value === "text") {
+    setOutputFormat(value);
   }
 }
 

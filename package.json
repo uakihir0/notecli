@@ -10,6 +10,8 @@
   "files": [
     "dist",
     "README.md",
+    "README.ja.md",
+    "AGENTS.md",
     "LICENSE"
   ],
   "engines": {

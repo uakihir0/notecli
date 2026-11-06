@@ -69,6 +69,10 @@ function parseNetscapeCookieFile(input: string): CookieMap | null {
       return null;
     }
 
+    if (!isNoteDomain(fields[0])) {
+      continue;
+    }
+
     const name = fields[5]?.trim() ?? "";
     const value = fields[6] ?? "";
     if (name) {
@@ -78,6 +82,14 @@ function parseNetscapeCookieFile(input: string): CookieMap | null {
   }
 
   return found ? cookies : null;
+}
+
+function isNoteDomain(domain: string | undefined): boolean {
+  if (!domain) {
+    return true;
+  }
+  const normalized = domain.replace(/^\./, "").toLowerCase();
+  return normalized === "note.com" || normalized.endsWith(".note.com");
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -111,7 +123,12 @@ function parseJsonCookies(input: string): CookieMap | null {
       const record = entry as Record<string, unknown>;
       const name = record.name ?? record.Name;
       const value = record.value ?? record.Value;
-      if (typeof name === "string" && typeof value === "string") {
+      const domain = record.domain ?? record.Domain;
+      if (
+        typeof name === "string" &&
+        typeof value === "string" &&
+        (typeof domain !== "string" || isNoteDomain(domain))
+      ) {
         cookies[name] = value;
       }
     }
