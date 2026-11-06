@@ -175,7 +175,14 @@ export function registerAuthCommand(program: Command): void {
                 credentials_path: auth.credentialsPath,
                 user,
                 cookie_names: Object.keys(auth.jar.toJSON()).sort(),
-                warnings: auth.warnings,
+                warnings: [
+                  ...auth.warnings,
+                  ...(auth.jar.get(XSRF_COOKIE)
+                    ? []
+                    : [
+                        "XSRF-TOKEN is missing. Reads work, but create/update/publish may fail.",
+                      ]),
+                ],
               });
             } else {
               printAuthStatusText({
@@ -183,7 +190,14 @@ export function registerAuthCommand(program: Command): void {
                 source: auth.source,
                 user,
                 credentialsPath: auth.credentialsPath,
-                warnings: auth.warnings,
+                warnings: [
+                  ...auth.warnings,
+                  ...(auth.jar.get(XSRF_COOKIE)
+                    ? []
+                    : [
+                        "XSRF-TOKEN is missing. Reads work, but create/update/publish may fail.",
+                      ]),
+                ],
               });
             }
           } catch (error) {
