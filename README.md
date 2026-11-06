@@ -224,6 +224,8 @@ Example JSON shapes:
 ## Security
 
 - Cookie values are never printed, including by `auth status` and `--verbose`.
+- Cookie files exported from a browser are filtered to `note.com` domains when their format
+  includes a domain column; unrelated cookies are not sent to note.com.
 - The stored credentials file is created with `0600` (directory `0700`).
 - Environment variables take precedence over the file, so agents can inject secrets without
   writing them to disk.

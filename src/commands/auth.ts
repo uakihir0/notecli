@@ -15,7 +15,7 @@ import {
   XSRF_COOKIE,
 } from "../lib/cookies.js";
 import { AuthError, InputError } from "../lib/errors.js";
-import { printAuthStatusText } from "../lib/format.js";
+import { printAuthStatusText, printWarnings } from "../lib/format.js";
 import { readCookieInput } from "../lib/input.js";
 import { isJsonOutput, writeJson, writeText } from "../lib/output.js";
 import { runAction } from "../lib/runner.js";
@@ -50,7 +50,8 @@ export function registerAuthCommand(program: Command): void {
           const jar = new CookieJar(cookies);
 
           let user: UserInfo | undefined;
-          if (options.verify !== false) {
+          const verified = options.verify !== false;
+          if (verified) {
             const client = new NoteApiClient(jar);
             user = await client.getCurrentUser();
           }
@@ -72,16 +73,24 @@ export function registerAuthCommand(program: Command): void {
               user: user ?? null,
               cookie_names: Object.keys(jar.toJSON()).sort(),
               warnings,
+              verified,
             });
           } else {
-            printAuthStatusText({
-              authenticated: true,
-              source: "file",
-              user,
-              credentialsPath: getCredentialsPath(),
-              warnings,
-            });
-            writeText(`Credentials saved to ${getCredentialsPath()}.`);
+            if (verified) {
+              printAuthStatusText({
+                authenticated: true,
+                source: "file",
+                user,
+                credentialsPath: getCredentialsPath(),
+                warnings,
+              });
+              writeText(`Credentials saved to ${getCredentialsPath()}.`);
+            } else {
+              writeText(
+                `Credentials saved to ${getCredentialsPath()} (not verified; run "notecli auth status" later).`
+              );
+              printWarnings(warnings);
+            }
           }
         })
     );
