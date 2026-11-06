@@ -72,11 +72,18 @@ export async function readCookieInput(options: {
   xsrf?: string;
 }): Promise<string> {
   if (options.session !== undefined) {
+    if (options.cookie !== undefined || options.cookieFile !== undefined) {
+      throw new InputError("Use either --session/--xsrf or --cookie/--cookie-file, not both.");
+    }
     const parts = [`_note_session_v5=${options.session.trim()}`];
     if (options.xsrf !== undefined && options.xsrf.trim() !== "") {
       parts.push(`XSRF-TOKEN=${options.xsrf.trim()}`);
     }
     return parts.join("; ");
+  }
+
+  if (options.xsrf !== undefined) {
+    throw new InputError("--xsrf requires --session.");
   }
 
   if (options.cookie !== undefined && options.cookieFile !== undefined) {
