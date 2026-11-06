@@ -36,15 +36,28 @@ git clone <this-repository>
 cd notecli
 pnpm install
 pnpm build
-pnpm link --global
 ```
 
-Alternatively, install the packed package:
+Run it directly from the repository (no global install required):
 
 ```bash
-pnpm pack
-npm install -g ./notecli-0.1.0.tgz
+export PATH="$PWD/bin:$PATH"
+notecli --version
 ```
+
+`./bin/notecli` and `node dist/cli.js` work too. The wrapper uses the local `dist/`
+build, so run `pnpm build` after changing the source.
+
+Optional global install:
+
+```bash
+npm install -g .
+```
+
+`npm` installs into the active Node prefix, which is usually already on `PATH`.
+`pnpm link --global` may fail when pnpm's global bin directory
+(`~/Library/pnpm/bin` on macOS) is not on `PATH`; in that case use the local
+wrapper above or run `pnpm setup` and restart your shell.
 
 ## Authentication
 

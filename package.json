@@ -21,6 +21,7 @@
     "clean": "rm -rf dist",
     "build": "tsc -p tsconfig.build.json",
     "dev": "tsx src/cli.ts",
+    "notecli": "node dist/cli.js",
     "start": "node dist/cli.js",
     "test": "vitest run",
     "test:watch": "vitest",

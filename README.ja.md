@@ -18,8 +18,27 @@ git clone <this-repository>
 cd notecli
 pnpm install
 pnpm build
-pnpm link --global
 ```
+
+リポジトリ内から直接実行できます（グローバルインストール不要）。
+
+```bash
+export PATH="$PWD/bin:$PATH"
+notecli --version
+```
+
+`./bin/notecli` または `node dist/cli.js` でも実行できます。ソースを変更したら
+`pnpm build` を再実行してください。
+
+グローバルインストールする場合:
+
+```bash
+npm install -g .
+```
+
+`pnpm link --global` は、pnpm の global bin（macOS では `~/Library/pnpm/bin`）が
+`PATH` に無いと失敗します。その場合は上記のローカル実行を使うか、`pnpm setup` を
+実行してシェルを再起動してください。
 
 ## 認証
 

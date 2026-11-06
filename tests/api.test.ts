@@ -179,6 +179,23 @@ describe("NoteApiClient", () => {
 
     await expect(client.getCurrentUser()).resolves.toEqual({ id: "42", urlname: "writer" });
   });
+
+  it("falls back to the authenticated article list for session checks", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse({ error: "missing" }, 404))
+      .mockResolvedValueOnce(jsonResponse({ error: "bad request" }, 400))
+      .mockResolvedValueOnce(
+        jsonResponse({ data: { notes: [], totalCount: 0, isLastPage: true } })
+      );
+    const client = new NoteApiClient(jar(), {
+      baseUrl: "https://example.test/api",
+      fetchImpl: fetchMock as unknown as typeof fetch,
+    });
+
+    await expect(client.getCurrentUser()).resolves.toEqual({ id: "", urlname: "" });
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
 });
 
 describe("requireArticleKey", () => {

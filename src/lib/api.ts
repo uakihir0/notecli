@@ -187,16 +187,22 @@ export class NoteApiClient {
       }
     }
 
-    const response = await this.get<Record<string, unknown>>("/v1/stats/pv");
-    const user = extractUser(response);
-    if (user) {
-      return user;
+    try {
+      const response = await this.get<Record<string, unknown>>("/v1/stats/pv");
+      const user = extractUser(response);
+      if (user) {
+        return user;
+      }
+    } catch (error) {
+      if (error instanceof AuthError || error instanceof RateLimitError) {
+        throw error;
+      }
     }
 
-    throw new AuthError(
-      "note.com accepted the request but did not return user information. " +
-        "The session cookie may be invalid or expired. Run \"notecli auth login\"."
-    );
+    // Some accounts do not expose user details through the endpoints above.
+    // The authenticated article list is a reliable session check.
+    await this.get<unknown>("/v2/note_list/contents", { page: 1 });
+    return { id: "", urlname: "" };
   }
 
   private buildUrl(path: string, query?: Record<string, QueryValue>): string {
