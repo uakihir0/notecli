@@ -1,0 +1,46 @@
+{
+  "name": "notecli",
+  "version": "0.1.0",
+  "description": "Agent-friendly CLI for managing note.com articles",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "notecli": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsx src/cli.ts",
+    "start": "node dist/cli.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "keywords": [
+    "note",
+    "note.com",
+    "cli",
+    "ai-agent",
+    "markdown"
+  ],
+  "dependencies": {
+    "commander": "^15.0.0",
+    "markdown-it": "^15.0.3",
+    "turndown": "^7.2.4"
+  },
+  "devDependencies": {
+    "@types/markdown-it": "^14.2.0",
+    "@types/node": "^26.6.6",
+    "@types/turndown": "^5.0.6",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.0"
+  }
+}
