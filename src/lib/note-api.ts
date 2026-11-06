@@ -12,7 +12,7 @@ import {
   type ArticleListResult,
 } from "./articles.js";
 import { hasEmbedHtml, resolveEmbedKeys } from "./embeds.js";
-import { ApiError, InputError, NotFoundError } from "./errors.js";
+import { ApiError, InputError, NotFoundError, NotecliError } from "./errors.js";
 import { htmlToMarkdown } from "./html-to-markdown.js";
 import { markdownToNoteHtml } from "./markdown-to-html.js";
 
@@ -179,18 +179,32 @@ export async function createDraft(
   let html = markdownToNoteHtml(input.markdown);
   const warnings: string[] = [];
 
-  if (hasEmbedHtml(html)) {
-    const resolved = await resolveEmbedKeys(client, html, String(key));
-    html = resolved.html;
-    warnings.push(...resolved.warnings);
-  }
+  try {
+    if (hasEmbedHtml(html)) {
+      const resolved = await resolveEmbedKeys(client, html, String(key));
+      html = resolved.html;
+      warnings.push(...resolved.warnings);
+    }
 
-  ensureDraftSaved(
-    await client.post<unknown>(
-      `/v1/text_notes/draft_save?id=${encodeURIComponent(String(id))}&is_temp_saved=true`,
-      articlePayload(input.title, html, tags)
-    )
-  );
+    ensureDraftSaved(
+      await client.post<unknown>(
+        `/v1/text_notes/draft_save?id=${encodeURIComponent(String(id))}&is_temp_saved=true`,
+        articlePayload(input.title, html, tags)
+      )
+    );
+  } catch (error) {
+    if (error instanceof NotecliError) {
+      throw new NotecliError({
+        code: error.code,
+        message: `Draft "${key}" was created, but saving its body failed: ${error.message}`,
+        ...(error.statusCode !== undefined ? { statusCode: error.statusCode } : {}),
+        ...(error.retryAfter !== undefined ? { retryAfter: error.retryAfter } : {}),
+        details: { ...(error.details ?? {}), draft_key: String(key) },
+        cause: error,
+      });
+    }
+    throw error;
+  }
 
   return {
     article: {

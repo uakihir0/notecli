@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { NoteApiClient } from "../src/lib/api.js";
-import { InputError } from "../src/lib/errors.js";
+import { ApiError, InputError } from "../src/lib/errors.js";
 import {
   createDraft,
   deleteDraft,
@@ -120,6 +120,17 @@ describe("createDraft", () => {
     const payload = post.mock.calls[1]![1] as Record<string, unknown>;
     expect(String(payload.body)).toContain('embedded-content-key="emb-server"');
     expect(result.warnings).toEqual([]);
+  });
+
+  it("reports the draft key when saving the body fails", async () => {
+    const post = vi
+      .fn()
+      .mockResolvedValueOnce({ data: { id: 123, key: "n123" } })
+      .mockRejectedValueOnce(new ApiError("save failed"));
+
+    await expect(
+      createDraft(asClient({ post }), { title: "Hello", markdown: "# Hello" })
+    ).rejects.toThrow(/n123.*saving its body failed/);
   });
 });
 
