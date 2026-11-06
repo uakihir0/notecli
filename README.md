@@ -19,6 +19,8 @@ can be read from stdin, errors are machine-readable, and cookie values are never
   blockquote citations, TOC, text alignment, embeds, stock notation)
 - Convert note.com HTML back to Markdown for editing
 - Upload body images and eyecatch images
+  - Body images use a presigned S3 upload and do not change the eyecatch
+  - Eyecatch images must have a 1280:670 aspect ratio (note.com requirement)
 - Create preview URLs for drafts
 - Agent-friendly JSON output and stable exit codes
 - Cookie rotation from `Set-Cookie` responses

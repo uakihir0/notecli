@@ -158,6 +158,9 @@ pnpm -s notecli image <key> ./body.png --json          # body image; result incl
 pnpm -s notecli image <key> ./header.png --eyecatch --json
 ```
 
+Body images are uploaded through a presigned S3 POST and do not change the article's eyecatch.
+Eyecatch images must have a 1280:670 aspect ratio, which is a note.com requirement.
+
 The result includes the uploaded `url`; for body images, insert the returned `markdown` snippet
 into the article body.
 

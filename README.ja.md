@@ -151,6 +151,9 @@ notecli image n1234567890ab ./header.png --eyecatch
 notecli delete n1234567890ab --yes
 ```
 
+本文画像は S3 の presigned POST でアップロードされ、アイキャッチは変更しません。
+アイキャッチ画像は note.com の仕様で 1280:670 の比率が必要です。
+
 ## Markdown 対応
 
 見出し、段落、強調、リンク、リスト、コードブロック、画像に加えて、note.com 向けに次を変換します。
