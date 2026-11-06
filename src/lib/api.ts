@@ -52,6 +52,118 @@ function parseRetryAfter(value: string | null): number | undefined {
   return undefined;
 }
 
+interface NoteErrorDetails {
+  code?: string;
+  message?: string;
+}
+
+function extractNoteError(text: string): NoteErrorDetails {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    return {};
+  }
+
+  if (parsed === null || typeof parsed !== "object") {
+    return {};
+  }
+
+  const record = parsed as Record<string, unknown>;
+  const result: NoteErrorDetails = {};
+
+  if (typeof record.error === "string") {
+    result.code = record.error;
+    result.message = record.error;
+  } else if (record.error !== null && typeof record.error === "object") {
+    const error = record.error as Record<string, unknown>;
+    if (typeof error.code === "string") {
+      result.code = error.code;
+    } else if (typeof error.type === "string") {
+      result.code = error.type;
+    }
+    if (typeof error.message === "string") {
+      result.message = error.message;
+    }
+  }
+
+  if (record.data !== null && typeof record.data === "object") {
+    const data = record.data as Record<string, unknown>;
+    if (typeof data.error === "string") {
+      result.code = data.error;
+    }
+  }
+
+  return result;
+}
+
+function emailActivationError(
+  status: number,
+  noteError: NoteErrorDetails
+): ApiError {
+  return new ApiError(
+    "note.com requires email verification before this action. " +
+      "Open the verification email sent to your registered address, complete verification, " +
+      "then retry. The note.com response was: " +
+      (noteError.message ?? "email_activation"),
+    status,
+    {
+      note_code: noteError.code ?? "email_activation",
+      ...(noteError.message ? { note_message: noteError.message } : {}),
+    }
+  );
+}
+
+function authenticationPayloadError(noteError: NoteErrorDetails): AuthError | null {
+  const code = (noteError.code ?? "").toLowerCase();
+  const message = (noteError.message ?? "").toLowerCase();
+  if (
+    code === "auth" ||
+    code === "not_login" ||
+    code === "require_login" ||
+    code === "unauthorized" ||
+    message.includes("not_login") ||
+    message.includes("not logged") ||
+    message.includes("unauthorized")
+  ) {
+    return new AuthError(
+      "note.com reported that the session is not logged in. " +
+        "Refresh the session cookie or run \"notecli auth login\"."
+    );
+  }
+  return null;
+}
+
+/**
+ * note.com often returns HTTP 200 with an `error` object for logical failures.
+ * Convert those into normal CLI errors instead of treating them as success.
+ */
+function logicalError(status: number, text: string): Error | null {
+  const noteError = extractNoteError(text);
+  if (!noteError.code && !noteError.message) {
+    return null;
+  }
+
+  if (noteError.code === "email_activation") {
+    return emailActivationError(status, noteError);
+  }
+
+  const authError = authenticationPayloadError(noteError);
+  if (authError) {
+    return authError;
+  }
+
+  return new ApiError(
+    noteError.message ??
+      `note.com returned an error${noteError.code ? ` (${noteError.code})` : ""}.`,
+    status,
+    {
+      ...(noteError.code ? { note_code: noteError.code } : {}),
+      ...(noteError.message ? { note_message: noteError.message } : {}),
+    }
+  );
+}
+
 /**
  * Thin, authenticated client for note.com's unofficial API.
  *
@@ -161,8 +273,9 @@ export class NoteApiClient {
       return {} as T;
     }
 
+    let parsed: unknown;
     try {
-      return JSON.parse(text) as T;
+      parsed = JSON.parse(text);
     } catch {
       throw new ApiError(
         `note.com returned a non-JSON response (HTTP ${response.status}).`,
@@ -170,6 +283,13 @@ export class NoteApiClient {
         { method, path, response: responseSnippet(text) }
       );
     }
+
+    const logical = logicalError(response.status, text);
+    if (logical) {
+      throw logical;
+    }
+
+    return parsed as T;
   }
 
   async getCurrentUser(): Promise<UserInfo> {
@@ -305,7 +425,16 @@ export class NoteApiClient {
   private mapError(response: Response, text: string): Error {
     const status = response.status;
     const responseInfo = responseSnippet(text);
-    const details = responseInfo ? { response: responseInfo } : undefined;
+    const noteError = extractNoteError(text);
+    const details = {
+      ...(responseInfo ? { response: responseInfo } : {}),
+      ...(noteError.code ? { note_code: noteError.code } : {}),
+      ...(noteError.message ? { note_message: noteError.message } : {}),
+    };
+
+    if (noteError.code === "email_activation") {
+      return emailActivationError(status, noteError);
+    }
 
     if (status === 401) {
       return new AuthError(
@@ -334,6 +463,15 @@ export class NoteApiClient {
       return new ApiError(
         "Access denied by note.com (HTTP 403). The session may lack permission, " +
           "or the XSRF token may be missing.",
+        status,
+        details
+      );
+    }
+    if (status === 422) {
+      return new ApiError(
+        noteError.message
+          ? `note.com rejected the request: ${noteError.message}`
+          : "note.com rejected the request (HTTP 422).",
         status,
         details
       );

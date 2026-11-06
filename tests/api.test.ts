@@ -165,6 +165,51 @@ describe("NoteApiClient", () => {
     await expect(client.get("/v2/self")).rejects.toBeInstanceOf(ApiError);
   });
 
+  it("maps HTTP 200 error payloads to API errors", async () => {
+    const client = new NoteApiClient(jar(), {
+      baseUrl: "https://example.test/api",
+      fetchImpl: vi.fn(async () =>
+        jsonResponse({ error: { code: "invalid", message: "画像の比率が不正です" } })
+      ) as unknown as typeof fetch,
+    });
+
+    await expect(client.post("/v1/image_upload/note_eyecatch", {})).rejects.toThrow(
+      /画像の比率が不正です/
+    );
+  });
+
+  it("explains email activation errors on 422", async () => {
+    const client = new NoteApiClient(jar(), {
+      baseUrl: "https://example.test/api",
+      fetchImpl: vi.fn(async () =>
+        jsonResponse(
+          {
+            error: {
+              code: "email_activation",
+              message: "メール認証が完了していないため投稿できません。",
+            },
+          },
+          422
+        )
+      ) as unknown as typeof fetch,
+    });
+
+    await expect(client.post("/v1/text_notes", {})).rejects.toThrow(/email verification/);
+  });
+
+  it("explains email activation errors on 403", async () => {
+    const client = new NoteApiClient(jar(), {
+      baseUrl: "https://example.test/api",
+      fetchImpl: vi.fn(async () =>
+        jsonResponse({ data: { error: "email_activation" } }, 403)
+      ) as unknown as typeof fetch,
+    });
+
+    await expect(client.post("/v2/notes/n123/access_tokens", {})).rejects.toThrow(
+      /email verification/
+    );
+  });
+
   it("retrieves the current user from the stats endpoint", async () => {
     const fetchMock = vi.fn(async (_input: string | URL | Request) =>
       jsonResponse({ data: { user_id: 42, urlname: "writer" } })
