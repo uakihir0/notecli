@@ -6,6 +6,7 @@ import { Command, CommanderError, Option } from "commander";
 
 import { registerArticleCommands } from "./commands/articles.js";
 import { registerAuthCommand } from "./commands/auth.js";
+import { loadDotEnv } from "./lib/env.js";
 import { reportError } from "./lib/runner.js";
 import { isJsonOutput, setOutputFormat, type OutputFormat } from "./lib/output.js";
 import { VERSION } from "./lib/version.js";
@@ -92,6 +93,7 @@ Agent notes:
 }
 
 async function main(): Promise<void> {
+  loadDotEnv();
   applyEarlyOutputFormat(process.argv);
   const program = buildProgram();
 

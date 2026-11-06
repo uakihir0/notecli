@@ -195,6 +195,23 @@ describe("NoteApiClient", () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
+  it("validates the session with /v3/current_user/features as a last resort", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse({ error: "bad request" }, 400))
+      .mockResolvedValueOnce(jsonResponse({ error: "missing" }, 404))
+      .mockResolvedValueOnce(jsonResponse({ data: { features: [] } }));
+    const client = new NoteApiClient(jar(), {
+      baseUrl: "https://example.test/api",
+      fetchImpl: fetchMock as unknown as typeof fetch,
+    });
+
+    await expect(client.getCurrentUser()).resolves.toEqual({ id: "", urlname: "" });
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    const url = new URL(String(fetchMock.mock.calls[2]![0]));
+    expect(url.pathname).toBe("/api/v3/current_user/features");
+  });
+
   it("treats a 200 not_login payload as an auth error", async () => {
     const fetchMock = vi.fn(async () =>
       jsonResponse({ error: { code: "auth", message: "not_login" } })

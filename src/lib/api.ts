@@ -217,8 +217,29 @@ export class NoteApiClient {
       lastError = error;
     }
 
+    // A stable, account-scoped endpoint that returns 401 for logged-out
+    // sessions. It does not expose user details, but it validates the cookie.
+    try {
+      const response = await this.get<Record<string, unknown>>(
+        "/v3/current_user/features"
+      );
+      if (isAuthenticationErrorResponse(response)) {
+        throw new AuthError(
+          "note.com reported that the session is not logged in. " +
+            "Refresh the session cookie or run \"notecli auth login\"."
+        );
+      }
+      return extractUser(response) ?? { id: "", urlname: "" };
+    } catch (error) {
+      if (error instanceof AuthError || error instanceof RateLimitError) {
+        throw error;
+      }
+      lastError = error;
+    }
+
     throw new AuthError(
-      "Could not verify the note.com session. Refresh the session cookie or run \"notecli auth login\".",
+      "Could not verify the note.com session. Refresh the session cookie or run \"notecli auth login\". " +
+        "Include _note_session_v5, XSRF-TOKEN, and note_gql_auth_token when they are present.",
       lastError instanceof Error ? { last_error: lastError.message } : undefined
     );
   }

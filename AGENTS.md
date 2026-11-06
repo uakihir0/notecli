@@ -5,12 +5,17 @@ in non-interactive shells. Follow this contract to avoid breaking user content o
 
 ## Authentication
 
-Prefer environment variables; never print or echo their values.
+Prefer environment variables; never print or echo their values. `notecli` automatically loads
+`.env` from the current working directory (Node 20.12+); shell variables take precedence.
 
 ```bash
-export NOTE_COOKIE='_note_session_v5=...; XSRF-TOKEN=...'
+# .env (gitignored; chmod 600)
+NOTE_COOKIE='_note_session_v5=...; XSRF-TOKEN=...; note_gql_auth_token=...'
 pnpm -s notecli auth status --json
 ```
+
+Include all note.com cookies that are present (`_note_session_v5`, `XSRF-TOKEN`,
+`note_gql_auth_token`, etc.). Missing cookies can make write operations fail even when reads work.
 
 Alternative: `NOTE_COOKIE_FILE=/path/to/cookies.txt` (raw header, JSON, or Netscape format).
 

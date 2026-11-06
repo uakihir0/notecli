@@ -66,24 +66,30 @@ npm install -g .
 - `_note_session_v5`（HttpOnly のため `document.cookie` では取得できません）
 - `XSRF-TOKEN`
 
-### 環境変数（エージェント推奨）
+Cookie は次のいずれかで設定できます。`notecli` はカレントディレクトリの `.env` を
+自動読み込みします（Node 20.12+、シェルの環境変数が優先）。
+
+```bash
+# .env（Git 管理外・chmod 600 推奨）
+NOTE_COOKIE='_note_session_v5=...; XSRF-TOKEN=...'
+```
+
+```bash
+pnpm -s notecli auth status --json
+```
+
+`.env` を使わない場合は環境変数でも設定できます。
 
 ```bash
 export NOTE_COOKIE='_note_session_v5=...; XSRF-TOKEN=...'
-notecli auth status --json
+pnpm -s notecli auth status --json
 ```
-
-`NOTE_COOKIE` は次の形式を受け付けます。
-
-- 生の Cookie ヘッダー
-- JSON オブジェクト / Playwright 形式の JSON 配列
-- Netscape 形式の `cookies.txt` の中身
 
 ### Cookie ファイル
 
 ```bash
 export NOTE_COOKIE_FILE="$HOME/.note-cookies"
-notecli auth status
+pnpm -s notecli auth status
 ```
 
 ### 保存ファイル
@@ -104,6 +110,9 @@ notecli auth set-cookie '_note_session_v5=...; XSRF-TOKEN=...'
 優先順位は `NOTE_COOKIE` → `NOTE_COOKIE_FILE` → 保存ファイルです。
 
 ## コマンド例
+
+以下では `notecli` と書いていますが、リポジトリ内では `pnpm -s notecli` に置き換えて
+実行してください。
 
 ```bash
 # 下書き一覧

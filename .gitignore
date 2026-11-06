@@ -6,3 +6,8 @@ coverage/
 .env
 .env.*
 !.env.example
+
+# Local note.com session cookie (never commit)
+cookie.txt
+cookies.txt
+*.cookies.txt

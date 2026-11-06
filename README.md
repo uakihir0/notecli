@@ -13,7 +13,7 @@ can be read from stdin, errors are machine-readable, and cookie values are never
 
 ## Features
 
-- Authenticate with a Cookie header, a cookie file, or a stored credentials file
+- Authenticate with a Cookie header, a cookie file, `.env`, or a stored credentials file
 - List, get, create, update, publish, and delete articles
 - Convert Markdown to note.com-compatible HTML (element UUIDs, lists, code blocks, images,
   blockquote citations, TOC, text alignment, embeds, stock notation)
@@ -85,9 +85,16 @@ the `XSRF-TOKEN` cookie from a logged-in browser session.
 
 ### 1. Environment variable (recommended for agents)
 
+`notecli` automatically loads `.env` from the current working directory (Node 20.12+).
+Shell environment variables take precedence over `.env`.
+
 ```bash
-export NOTE_COOKIE='_note_session_v5=...; XSRF-TOKEN=...'
-notecli auth status --json
+# .env (gitignored; chmod 600)
+NOTE_COOKIE='_note_session_v5=...; XSRF-TOKEN=...'
+```
+
+```bash
+pnpm -s notecli auth status --json
 ```
 
 `NOTE_COOKIE` accepts:
@@ -102,7 +109,7 @@ notecli auth status --json
 
 ```bash
 export NOTE_COOKIE_FILE="$HOME/.note-cookies"
-notecli auth status
+pnpm -s notecli auth status
 ```
 
 The file can use any of the formats above. Keep it private (`chmod 600`).
@@ -144,6 +151,8 @@ A browser extension that exports Netscape `cookies.txt` also works with `NOTE_CO
 `auth clear-cookie`) removes only the stored file; environment variables are unaffected.
 
 ## Commands
+
+In the examples below, `notecli` means `pnpm -s notecli` when running from this repository.
 
 ```text
 notecli auth set-cookie [cookie] [--file <path>] [--cookie-file <path>] [--session <value>] [--xsrf <token>] [--no-verify]
