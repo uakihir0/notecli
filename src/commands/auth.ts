@@ -29,6 +29,10 @@ interface SetCookieOptions {
   verify?: boolean;
 }
 
+const MISSING_XSRF_WARNING =
+  "XSRF-TOKEN is missing. Many note.com operations work without it; if a write request fails " +
+  "with HTTP 403/419, copy a fresh Cookie header that includes XSRF-TOKEN.";
+
 export function registerAuthCommand(program: Command): void {
   const auth = program
     .command("auth")
@@ -93,10 +97,7 @@ export function registerAuthCommand(program: Command): void {
           await saveCredentials(jar.toJSON(), user);
           const warnings: string[] = [];
           if (!jar.get(XSRF_COOKIE)) {
-            warnings.push(
-              "XSRF-TOKEN is missing. Read operations may work, but create/update/publish may fail. " +
-                "Copy the full Cookie header from your browser."
-            );
+            warnings.push(MISSING_XSRF_WARNING);
           }
 
           if (isJsonOutput()) {
@@ -177,11 +178,7 @@ export function registerAuthCommand(program: Command): void {
                 cookie_names: Object.keys(auth.jar.toJSON()).sort(),
                 warnings: [
                   ...auth.warnings,
-                  ...(auth.jar.get(XSRF_COOKIE)
-                    ? []
-                    : [
-                        "XSRF-TOKEN is missing. Reads work, but create/update/publish may fail.",
-                      ]),
+                  ...(auth.jar.get(XSRF_COOKIE) ? [] : [MISSING_XSRF_WARNING]),
                 ],
               });
             } else {
@@ -192,11 +189,7 @@ export function registerAuthCommand(program: Command): void {
                 credentialsPath: auth.credentialsPath,
                 warnings: [
                   ...auth.warnings,
-                  ...(auth.jar.get(XSRF_COOKIE)
-                    ? []
-                    : [
-                        "XSRF-TOKEN is missing. Reads work, but create/update/publish may fail.",
-                      ]),
+                  ...(auth.jar.get(XSRF_COOKIE) ? [] : [MISSING_XSRF_WARNING]),
                 ],
               });
             }
