@@ -180,10 +180,9 @@ export class NoteApiClient {
         return user;
       }
     } catch (error) {
+      // Auth and rate-limit errors are meaningful on their own. Other failures
+      // may be endpoint-specific, so try the stats endpoint below.
       if (error instanceof AuthError || error instanceof RateLimitError) {
-        throw error;
-      }
-      if (!(error instanceof NotFoundError)) {
         throw error;
       }
     }
