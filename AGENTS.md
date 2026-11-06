@@ -14,11 +14,19 @@ pnpm -s notecli auth status --json
 
 Alternative: `NOTE_COOKIE_FILE=/path/to/cookies.txt` (raw header, JSON, or Netscape format).
 
+To persist a cookie outside the environment:
+
+```bash
+pnpm -s notecli auth set-cookie --file /path/to/cookies.txt
+pnpm -s notecli auth set-cookie '_note_session_v5=...; XSRF-TOKEN=...'
+pnpm -s notecli auth set-cookie            # prompt
+```
+
 From the repository root, run commands as `pnpm -s notecli ...` (or `./bin/notecli ...`).
 `-s` keeps pnpm's own messages out of JSON output; exit codes are preserved.
 
 If neither is set, the CLI reads `~/.config/notecli/credentials.json` (written by
-`notecli auth login` with mode `0600`). `auth status` exits `3` when not authenticated.
+`notecli auth set-cookie` with mode `0600`). `auth status` exits `3` when not authenticated.
 
 ## Output
 

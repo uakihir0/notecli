@@ -20,9 +20,10 @@ import { readCookieInput } from "../lib/input.js";
 import { isJsonOutput, writeJson, writeText } from "../lib/output.js";
 import { runAction } from "../lib/runner.js";
 
-interface LoginOptions {
+interface SetCookieOptions {
   cookie?: string;
   cookieFile?: string;
+  file?: string;
   session?: string;
   xsrf?: string;
   verify?: boolean;
@@ -34,17 +35,50 @@ export function registerAuthCommand(program: Command): void {
     .description("Manage note.com credentials (Cookie header, env vars, or local file)");
 
   auth
-    .command("login")
-    .description("Validate and store note.com cookies")
+    .command("set-cookie [cookie]")
+    .alias("login")
+    .description("Set and store note.com cookies")
     .option("--cookie <cookie>", 'raw Cookie header, or "-" to read stdin')
-    .option("--cookie-file <path>", 'Cookie header/JSON/Netscape file, or "-" to read stdin')
+    .option("--file <path>", 'Cookie header/JSON/Netscape file, or "-" to read stdin')
+    .option(
+      "--cookie-file <path>",
+      'alias of --file (kept for compatibility)'
+    )
     .option("--session <value>", `value of the ${"_note_session_v5"} cookie`)
     .option("--xsrf <token>", "value of the XSRF-TOKEN cookie (with --session)")
     .option("--no-verify", "save without contacting note.com")
     .action(
-      (options: LoginOptions) =>
+      (cookie: string | undefined, options: SetCookieOptions) =>
         runAction(async () => {
-          const raw = await readCookieInput(options);
+          if (cookie !== undefined && options.cookie !== undefined) {
+            throw new InputError("Use either the positional <cookie> or --cookie, not both.");
+          }
+          if (
+            cookie !== undefined &&
+            (options.file !== undefined || options.cookieFile !== undefined)
+          ) {
+            throw new InputError(
+              "Use either the positional <cookie> or --file/--cookie-file, not both."
+            );
+          }
+          if (options.file !== undefined && options.cookieFile !== undefined) {
+            throw new InputError("Use either --file or --cookie-file, not both.");
+          }
+
+          const raw = await readCookieInput({
+            ...(cookie !== undefined
+              ? { cookie }
+              : options.cookie !== undefined
+                ? { cookie: options.cookie }
+                : {}),
+            ...(options.file !== undefined
+              ? { cookieFile: options.file }
+              : options.cookieFile !== undefined
+                ? { cookieFile: options.cookieFile }
+                : {}),
+            ...(options.session !== undefined ? { session: options.session } : {}),
+            ...(options.xsrf !== undefined ? { xsrf: options.xsrf } : {}),
+          });
           const cookies = parseCookieInput(raw);
           assertSessionCookie(cookies);
           const jar = new CookieJar(cookies);
@@ -67,7 +101,8 @@ export function registerAuthCommand(program: Command): void {
 
           if (isJsonOutput()) {
             writeJson({
-              authenticated: true,
+              authenticated: verified ? true : null,
+              stored: true,
               source: "file",
               credentials_path: getCredentialsPath(),
               user: user ?? null,
@@ -84,10 +119,10 @@ export function registerAuthCommand(program: Command): void {
                 credentialsPath: getCredentialsPath(),
                 warnings,
               });
-              writeText(`Credentials saved to ${getCredentialsPath()}.`);
+              writeText(`Cookie saved to ${getCredentialsPath()}.`);
             } else {
               writeText(
-                `Credentials saved to ${getCredentialsPath()} (not verified; run "notecli auth status" later).`
+                `Cookie saved to ${getCredentialsPath()} (not verified; run "notecli auth status" later).`
               );
               printWarnings(warnings);
             }
@@ -175,6 +210,7 @@ export function registerAuthCommand(program: Command): void {
 
   auth
     .command("logout")
+    .alias("clear-cookie")
     .description("Remove the locally stored credentials file")
     .action(
       () =>

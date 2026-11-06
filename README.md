@@ -110,10 +110,14 @@ The file can use any of the formats above. Keep it private (`chmod 600`).
 ### 3. Stored credentials file
 
 ```bash
-notecli auth login --cookie-file "$HOME/.note-cookies"
+notecli auth set-cookie --file "$HOME/.note-cookies"
 # or paste when prompted:
-notecli auth login
+notecli auth set-cookie
+# or pass the Cookie header as an argument:
+notecli auth set-cookie '_note_session_v5=...; XSRF-TOKEN=...'
 ```
+
+`auth login` is kept as an alias of `auth set-cookie`.
 
 Credentials are stored in `~/.config/notecli/credentials.json` with mode `0600`.
 Set `NOTE_CONFIG_DIR` or `XDG_CONFIG_HOME` to change the location.
@@ -128,7 +132,7 @@ Set `NOTE_CONFIG_DIR` or `XDG_CONFIG_HOME` to change the location.
 4. Build a header: `_note_session_v5=...; XSRF-TOKEN=...`
 
 A browser extension that exports Netscape `cookies.txt` also works with `NOTE_COOKIE_FILE` or
-`notecli auth login --cookie-file`.
+`notecli auth set-cookie --file`.
 
 ### Authentication precedence
 
@@ -136,13 +140,13 @@ A browser extension that exports Netscape `cookies.txt` also works with `NOTE_CO
 2. `NOTE_COOKIE_FILE`
 3. `~/.config/notecli/credentials.json` (or `NOTE_CONFIG_DIR/credentials.json`)
 
-`notecli auth status` reports the source and verifies the session. `notecli auth logout` removes
-only the stored file; environment variables are unaffected.
+`notecli auth status` reports the source and verifies the session. `notecli auth logout` (or
+`auth clear-cookie`) removes only the stored file; environment variables are unaffected.
 
 ## Commands
 
 ```text
-notecli auth login [--cookie <header>] [--cookie-file <path>] [--session <value>] [--xsrf <token>] [--no-verify]
+notecli auth set-cookie [cookie] [--file <path>] [--cookie-file <path>] [--session <value>] [--xsrf <token>] [--no-verify]
 notecli auth status
 notecli auth logout
 

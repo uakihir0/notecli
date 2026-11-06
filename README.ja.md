@@ -89,8 +89,14 @@ notecli auth status
 ### 保存ファイル
 
 ```bash
-notecli auth login --cookie-file "$HOME/.note-cookies"
+notecli auth set-cookie --file "$HOME/.note-cookies"
+# または対話入力
+notecli auth set-cookie
+# Cookie ヘッダーを直接渡す
+notecli auth set-cookie '_note_session_v5=...; XSRF-TOKEN=...'
 ```
+
+`auth login` は `auth set-cookie` のエイリアスとして残しています。
 
 `~/.config/notecli/credentials.json` にパーミッション `0600` で保存されます。
 保存場所は `NOTE_CONFIG_DIR` / `XDG_CONFIG_HOME` で変更できます。

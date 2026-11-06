@@ -215,6 +215,29 @@ describe("CLI", () => {
     expect(output.source).toBe("file");
   });
 
+  it("stores a Cookie header passed to auth set-cookie", async () => {
+    const cookie = `${SESSION_COOKIE}=positional-session; ${XSRF_COOKIE}=positional-xsrf`;
+
+    await runCli("auth", "set-cookie", cookie, "--no-verify", "--json");
+
+    expect(process.exitCode).toBe(0);
+    expect(stdout).not.toContain("positional-session");
+    expect(stdout).not.toContain("positional-xsrf");
+    const output = JSON.parse(stdout) as {
+      authenticated: boolean | null;
+      stored: boolean;
+      verified: boolean;
+    };
+    expect(output.stored).toBe(true);
+    expect(output.verified).toBe(false);
+    expect(output.authenticated).toBeNull();
+    const stored = JSON.parse(
+      await readFile(join(configDir, "credentials.json"), "utf8")
+    ) as { cookies: Record<string, string> };
+    expect(stored.cookies[SESSION_COOKIE]).toBe("positional-session");
+    expect(stored.cookies[XSRF_COOKIE]).toBe("positional-xsrf");
+  });
+
   it("prints human-readable tables in text mode", async () => {
     mockFetch(
       () =>

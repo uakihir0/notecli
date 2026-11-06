@@ -35,7 +35,8 @@ export function buildProgram(): Command {
       "after",
       `
 Examples:
-  $ notecli auth login --cookie-file ~/.note-cookies
+  $ notecli auth set-cookie --file ~/.note-cookies
+  $ notecli auth set-cookie '_note_session_v5=...; XSRF-TOKEN=...'
   $ notecli auth status
   $ notecli list --status draft --limit 20
   $ notecli get n1234567890ab --json
